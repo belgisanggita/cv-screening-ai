@@ -1,5 +1,7 @@
 from typing import Optional
-from pydantic import BaseModel, model_validator
+
+from fastapi import Form, File, UploadFile
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.minio_schemas import MinioFileSchema
 
@@ -19,19 +21,35 @@ class IngestResponse(BaseModel):
     status: str
     minio_file: str
 
-class ChatRequest(BaseModel):
+
+class ChatFormRequest(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     message: str
-    requirements_text: Optional[str] = None
-    requirements_file: Optional[MinioFileSchema] = None
     client_id: str
     job_posting_id: str
     top_k: int = 5
+    requirements_text: Optional[str] = None
+    requirements_file: Optional[UploadFile] = None
 
-    @model_validator(mode="after")
-    def check_requirements_not_both(self):
-        if self.requirements_text and self.requirements_file:
-            raise ValueError("Isi salah satu saja: requirements_text atau requirements_file, jangan dua-duanya")
-        return self
+    @classmethod
+    def as_form(
+        cls,
+        message: str = Form(...),
+        client_id: str = Form(...),
+        job_posting_id: str = Form(...),
+        top_k: int = Form(5),
+        requirements_text: Optional[str] = Form(None),
+        requirements_file: Optional[UploadFile] = File(None),
+    ) -> "ChatFormRequest":
+        return cls(
+            message=message,
+            client_id=client_id,
+            job_posting_id=job_posting_id,
+            top_k=top_k,
+            requirements_text=requirements_text,
+            requirements_file=requirements_file,
+        )
 
 
 class CandidateResult(BaseModel):
@@ -39,7 +57,7 @@ class CandidateResult(BaseModel):
     title: str
     score: float
     minio_file: str
-    file_url: str | None = None
+    file_url: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
