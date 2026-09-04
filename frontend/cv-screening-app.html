@@ -340,14 +340,6 @@
       <label>Backend URL</label>
       <input id="baseUrl" value="http://localhost:8000/api/v1" />
     </div>
-    <div class="field">
-      <label>Client ID</label>
-      <input id="clientId" value="design123" />
-    </div>
-    <div class="field">
-      <label>Job Posting ID</label>
-      <input id="jobId" value="job_123" />
-    </div>
     <div class="field small">
       <label>Jumlah kandidat</label>
       <input id="topK" type="number" min="1" max="20" value="5" />
@@ -496,16 +488,12 @@ async function sendMessage() {
   const message = msgInput.value.trim();
   if (!message) return;
 
-  const clientId = document.getElementById('clientId').value.trim();
-  const jobId = document.getElementById('jobId').value.trim();
   const topK = parseInt(document.getElementById('topK').value, 10) || 5;
 
   addHrBubble(message, pendingRequirementsFile ? pendingRequirementsFile.name : null);
 
   const formData = new FormData();
   formData.append('message', message);
-  formData.append('client_id', clientId);
-  formData.append('job_posting_id', jobId);
   formData.append('top_k', topK);
 
   if (pendingRequirementsFile) {

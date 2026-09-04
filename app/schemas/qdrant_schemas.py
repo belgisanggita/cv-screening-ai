@@ -8,8 +8,6 @@ class CandidatePayload(BaseModel):
     minio_file: str
     date: datetime
     text: str
-    client_id: str
-    job_posting_id: str
 
 
 class CandidateSearchResult(CandidatePayload):

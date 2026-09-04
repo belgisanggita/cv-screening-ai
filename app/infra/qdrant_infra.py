@@ -68,25 +68,24 @@ def upsert_candidate(candidate_id: str, vector: list[float], payload: dict) -> N
     logger.info(f"Upserted candidate {candidate_id} into Qdrant")
 
 
+def delete_candidate(candidate_id: str) -> None:
+    client = get_qdrant_client()
+    client.delete(
+        collection_name=settings.QDRANT_COLLECTION_NAME,
+        points_selector=qmodels.PointIdsList(points=[candidate_id]),
+    )
+    logger.info(f"Deleted candidate {candidate_id} from Qdrant")
+
+
 def search_candidates(
     query_vector: list[float],
-    client_id: str,
-    job_posting_id: str,
     limit: int = 10,
 ):
     client = get_qdrant_client()
 
-    query_filter = qmodels.Filter(
-        must=[
-            qmodels.FieldCondition(key="client_id", match=qmodels.MatchValue(value=client_id)),
-            qmodels.FieldCondition(key="job_posting_id", match=qmodels.MatchValue(value=job_posting_id)),
-        ]
-    )
-
     results = client.query_points(
         collection_name=settings.QDRANT_COLLECTION_NAME,
         query=query_vector,
-        query_filter=query_filter,
         limit=limit,
     )
     return results.points

@@ -29,8 +29,8 @@ FALLBACK_MESSAGE = (
 MIN_RELEVANCE_SCORE = 0.5  # threshold vector similarity, sebelum LLM scoring dipanggil
 
 NO_MATCH_MESSAGE_TEMPLATE = (
-    "Tidak ada dokumen CV yang tersedia untuk posisi/kriteria \"{message}\" pada job posting ini. "
-    "Kandidat yang ada di database untuk job posting ini memiliki latar belakang yang berbeda "
+    "Tidak ada dokumen CV yang tersedia untuk posisi/kriteria \"{message}\". "
+    "Kandidat yang ada di database memiliki latar belakang yang berbeda "
     "dari yang diminta."
 )
 
@@ -141,8 +141,7 @@ class ChatController:
 
     async def handle_chat(self, request: ChatFormRequest) -> ChatResponse:
         logger.info(
-            f"Chat request received: client_id={request.client_id}, "
-            f"job_posting_id={request.job_posting_id}, top_k={request.top_k}, "
+            f"Chat request received: top_k={request.top_k}, "
             f"message='{request.message[:80]}'"
         )
 
@@ -158,16 +157,14 @@ class ChatController:
 
         candidates = search_documents(
             query_text=query_text,
-            client_id=request.client_id,
-            job_posting_id=request.job_posting_id,
             limit=request.top_k,
         )
         logger.info(f"Retrieved {len(candidates)} candidates from Qdrant")
 
         if not candidates:
-            logger.info("No candidates found for this job_posting_id, returning early")
+            logger.info("No candidates found, returning early")
             return ChatResponse(
-                answer="Tidak ada kandidat ditemukan untuk job posting ini.",
+                answer="Tidak ada kandidat ditemukan.",
                 candidates=[],
             )
 
