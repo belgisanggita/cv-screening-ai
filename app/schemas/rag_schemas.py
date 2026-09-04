@@ -55,9 +55,10 @@ class ChatFormRequest(BaseModel):
 class CandidateResult(BaseModel):
     document_id: str
     title: str
-    score: float
+    score: float  # sekarang: match_score dari LLM (0-100), bukan cosine similarity
     minio_file: str
     file_url: Optional[str] = None
+    reasoning: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
