@@ -48,9 +48,9 @@ def upload_cv(file_bytes: bytes, object_name: str, content_type: str = "applicat
     return f"{bucket}/{object_name}"
 
 
-def get_presigned_url(object_name: str, expires_minutes: int = 60) -> str | None:
+def get_presigned_url(object_name: str, bucket_name: str | None = None, expires_minutes: int = 60) -> str | None:
     client = get_minio_client()
-    bucket = settings.MINIO_BUCKET
+    bucket = bucket_name or settings.MINIO_BUCKET
 
     try:
         return client.presigned_get_object(

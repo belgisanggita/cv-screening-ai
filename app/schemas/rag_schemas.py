@@ -39,6 +39,7 @@ class CandidateResult(BaseModel):
     title: str
     score: float
     minio_file: str
+    file_url: str | None = None
 
 
 class ChatResponse(BaseModel):

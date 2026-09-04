@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.routers.router import router
@@ -31,6 +32,14 @@ def create_app() -> FastAPI:
         description="AI-assisted CV screening service using RAG (Qdrant) + LLM",
         version=settings.APP_VERSION,
         lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.include_router(router, prefix=settings.API_PREFIX)

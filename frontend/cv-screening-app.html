@@ -150,6 +150,13 @@
     color: var(--muted);
     margin-top: 6px;
   }
+  .candidate-file a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .candidate-file a:hover {
+    text-decoration: underline;
+  }
 
   #composer {
     flex: none;
@@ -280,7 +287,7 @@ const attachName = document.getElementById('attachName');
 const removeAttach = document.getElementById('removeAttach');
 const statusText = document.getElementById('statusText');
 
-let pendingRequirementsFile = null; // { bucket_name, object_name, displayName }
+let pendingRequirementsFile = null; // File object (PDF), dikirim langsung sebagai bagian dari form /chat
 
 function baseUrl() {
   return document.getElementById('baseUrl').value.replace(/\/$/, '');
@@ -313,6 +320,11 @@ function addAssistantBubble(answer, candidates) {
     candidates.forEach((c, i) => {
       const row = document.createElement('div');
       row.className = 'candidate';
+
+      const fileLine = c.file_url
+        ? `<a href="${c.file_url}" target="_blank" rel="noopener">📄 ${escapeHtml(c.title || c.minio_file)}</a>`
+        : `📄 ${escapeHtml(c.minio_file || '')}`;
+
       row.innerHTML = `
         <div class="rank-badge">${i + 1}</div>
         <div class="candidate-body">
@@ -320,7 +332,7 @@ function addAssistantBubble(answer, candidates) {
             <span class="candidate-name">${escapeHtml(c.title || c.document_id)}</span>
             <span class="score">${(c.score * 100).toFixed(0)}% relevansi</span>
           </div>
-          <div class="candidate-file">📄 ${escapeHtml(c.minio_file || '')}</div>
+          <div class="candidate-file">${fileLine}</div>
         </div>
       `;
       panel.appendChild(row);
@@ -354,38 +366,13 @@ function escapeHtml(str) {
 
 attachBtn.addEventListener('click', () => fileInput.click());
 
-fileInput.addEventListener('change', async () => {
+fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   if (!file) return;
 
-  statusText.textContent = 'Mengupload file...';
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res = await fetch(`${baseUrl()}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Upload gagal (${res.status})`);
-    }
-
-    const data = await res.json();
-    pendingRequirementsFile = {
-      bucket_name: data.bucket_name,
-      object_name: data.object_name,
-      displayName: file.name,
-    };
-
-    attachName.textContent = file.name;
-    attachChip.classList.add('visible');
-    statusText.textContent = '';
-  } catch (e) {
-    statusText.textContent = `Gagal upload: ${e.message}`;
-  }
+  pendingRequirementsFile = file;
+  attachName.textContent = file.name;
+  attachChip.classList.add('visible');
 
   fileInput.value = '';
 });
@@ -403,20 +390,16 @@ async function sendMessage() {
   const jobId = document.getElementById('jobId').value.trim();
   const topK = parseInt(document.getElementById('topK').value, 10) || 5;
 
-  addHrBubble(message, pendingRequirementsFile ? pendingRequirementsFile.displayName : null);
+  addHrBubble(message, pendingRequirementsFile ? pendingRequirementsFile.name : null);
 
-  const body = {
-    message,
-    client_id: clientId,
-    job_posting_id: jobId,
-    top_k: topK,
-  };
+  const formData = new FormData();
+  formData.append('message', message);
+  formData.append('client_id', clientId);
+  formData.append('job_posting_id', jobId);
+  formData.append('top_k', topK);
 
   if (pendingRequirementsFile) {
-    body.requirements_file = {
-      bucket_name: pendingRequirementsFile.bucket_name,
-      object_name: pendingRequirementsFile.object_name,
-    };
+    formData.append('requirements_file', pendingRequirementsFile);
   }
 
   msgInput.value = '';
@@ -426,10 +409,10 @@ async function sendMessage() {
   statusText.textContent = 'Menganalisis kandidat...';
 
   try {
+    // Jangan set Content-Type manual — browser otomatis set multipart/form-data + boundary yang benar
     const res = await fetch(`${baseUrl()}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: formData,
     });
 
     if (!res.ok) {
