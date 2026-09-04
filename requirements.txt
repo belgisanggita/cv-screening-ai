@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+langchain-openai
+langchain
+qdrant-client
+fastembed
+minio
+pymupdf
